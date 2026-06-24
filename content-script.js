@@ -1,35 +1,26 @@
 (function() {
     'use strict';
-    if (window.name == "firstIFrame" || window.name === "secondIFrame") {
-        const nativeLGI = localStorage.getItem.bind(localStorage);
-        const nativeLSI = localStorage.setItem.bind(localStorage);
 
-        window.localStorage.getItem = function (key) {
-            return nativeLGI(window.name + "_" + key);
-        }
+    const allowedHosts = ["https://forgotten-society.com", "http://localhost", "http://localhost:5173"];
+    const types = ["add-script", "add-rule", "clear-rules", "clear-user-scripts"];
 
-        window.localStorage.setItem = function (key, value) {
-            return nativeLSI(window.name + "_" + key, value);
-
-        }
-        window.addEventListener("message", (e) => {
-            const {type, script} = e.data;
-            if (type === "add-script") {
-                let scriptEl = document.createElement("script");
-                scriptEl.innerHTML = script;
-                scriptEl.type = "module";
-                document.body.prepend(scriptEl);
-            }
-        });
-
-        window.addEventListener("DOMContentLoaded", () => {
-            window.parent.postMessage({type: "loaded", name: window.name}, "*");
-        });
+    if (!allowedHosts.includes(window.location.origin)) {
+        return;
     }
 
-    if (location.hostname === "forgotten-society.com" || location.hostname === "localhost") {
-        window.addEventListener("DOMContentLoaded", () => {
-            window.postMessage({type: "extension-loaded"}, "*");
-        });
-    }
+    window.addEventListener("message", (e) => {
+        if (e.source === window.self && allowedHosts.includes(e.origin) && types.includes(e.data.type)) {
+            chrome.runtime.sendMessage(e.data);
+        } 
+    });
+
+    window.addEventListener("DOMContentLoaded", async () => {
+        const res = await chrome.runtime.sendMessage({type: "check-user-scripts"});
+        window.postMessage({
+            type: "extension-loaded",
+            userScripts: res.userScripts,
+            version: chrome.runtime.getVersion(),
+        })
+    });
+
 })();
