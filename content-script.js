@@ -1,14 +1,15 @@
 (function() {
     'use strict';
 
-    const allowedHosts = ["https://forgotten-society.com", "http://localhost", "http://localhost:5173"];
-    const types = ["add-script", "add-rule", "clear-rules", "clear-user-scripts"];
+    const allowedHosts = ["https://forgotten-society.com"];
+    const types = ["add-script", "add-rule", "clear-rules", "add-user-script", "clear-user-scripts", "check-user-scripts"];
 
-    if (!allowedHosts.includes(window.location.origin)) {
+    if (!allowedHosts.includes(location.origin)) {
         return;
     }
 
     window.addEventListener("message", (e) => {
+        console.log(e);
         if (e.source === window.self && allowedHosts.includes(e.origin) && types.includes(e.data.type)) {
             chrome.runtime.sendMessage(e.data);
         } 
